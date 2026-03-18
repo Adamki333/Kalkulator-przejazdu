@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalkulator Dojazdu</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a1a; padding: 2rem; }
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: 1.5rem; }
+  .section { margin-bottom: 1.5rem; }
+  .section-title { font-size: 13px; font-weight: 500; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+  .row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .row label { font-size: 14px; color: #1a1a1a; min-width: 160px; flex-shrink: 0; }
+  .row input[type=range] { flex: 1; accent-color: #1a1a1a; }
+  .val { font-size: 14px; font-weight: 500; min-width: 70px; text-align: right; color: #1a1a1a; }
+  .row input[type=number] { width: 90px; font-size: 14px; padding: 6px 10px; border: 0.5px solid #ccc; border-radius: 8px; background: #fff; color: #1a1a1a; text-align: right; }
+  .row select { flex: 1; font-size: 14px; padding: 6px 10px; border: 0.5px solid #ccc; border-radius: 8px; background: #fff; color: #1a1a1a; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 1rem; }
+  .card { background: #ebebeb; border-radius: 8px; padding: 12px 14px; }
+  .card .clabel { font-size: 12px; color: #666; margin-bottom: 4px; }
+  .card .cval { font-size: 22px; font-weight: 500; color: #1a1a1a; }
+  .card .cunit { font-size: 12px; color: #666; }
+  .divider { border: none; border-top: 0.5px solid #ddd; margin: 1.5rem 0; }
+  .note { font-size: 12px; color: #888; margin-top: 6px; }
+  .transport-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab { padding: 6px 14px; border: 0.5px solid #ccc; border-radius: 20px; font-size: 13px; cursor: pointer; background: transparent; color: #666; transition: all 0.15s; }
+  .tab.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<h1>Kalkulator kosztu dojazdu</h1>
+
+<div class="section">
+  <div class="section-title">Środek transportu</div>
+  <div class="transport-tabs">
+    <button class="tab active" onclick="setTransport('car', this)">Samochód</button>
+    <button class="tab" onclick="setTransport('public', this)">Komunikacja miejska</button>
+    <button class="tab" onclick="setTransport('mixed', this)">Hybrid (auto + bilety)</button>
+  </div>
+</div>
+
+<div class="section" id="car-settings">
+  <div class="section-title">Parametry dojazdu</div>
+  <div class="row">
+    <label>Odległość (km, jedna strona)</label>
+    <input type="range" min="1" max="100" step="1" value="20" id="dist" oninput="update()">
+    <span class="val"><span id="dist-out">20</span> km</span>
+  </div>
+  <div class="row">
+    <label>Spalanie (l/100km)</label>
+    <input type="range" min="3" max="15" step="0.5" value="6" id="burn" oninput="update()">
+    <span class="val"><span id="burn-out">6.0</span> l</span>
+  </div>
+  <div class="row">
+    <label>Cena paliwa (zł/l)</label>
+    <input type="range" min="5" max="9" step="0.1" value="6.5" id="fuel" oninput="update()">
+    <span class="val"><span id="fuel-out">6.50</span> zł</span>
+  </div>
+  <div class="row">
+    <label>Koszty stałe / amort. (zł/mies.)</label>
+    <input type="number" min="0" step="50" value="300" id="fixed" oninput="update()">
+  </div>
+</div>
+
+<div class="section hidden" id="public-settings">
+  <div class="section-title">Bilety komunikacji</div>
+  <div class="row">
+    <label>Bilet miesięczny (zł)</label>
+    <input type="number" min="0" step="10" value="180" id="monthly-ticket" oninput="update()">
+  </div>
+</div>
+
+<div class="section hidden" id="mixed-settings">
+  <div class="section-title">Dojazd hybrydowy</div>
+  <div class="row">
+    <label>Odległość autem (km)</label>
+    <input type="range" min="1" max="60" step="1" value="10" id="dist-mix" oninput="update()">
+    <span class="val"><span id="dist-mix-out">10</span> km</span>
+  </div>
+  <div class="row">
+    <label>Spalanie (l/100km)</label>
+    <input type="range" min="3" max="15" step="0.5" value="6" id="burn-mix" oninput="update()">
+    <span class="val"><span id="burn-mix-out">6.0</span> l</span>
+  </div>
+  <div class="row">
+    <label>Cena paliwa (zł/l)</label>
+    <input type="range" min="5" max="9" step="0.1" value="6.5" id="fuel-mix" oninput="update()">
+    <span class="val"><span id="fuel-mix-out">6.50</span> zł</span>
+  </div>
+  <div class="row">
+    <label>Bilet miesięczny (zł)</label>
+    <input type="number" min="0" step="10" value="180" id="ticket-mix" oninput="update()">
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="section">
+  <div class="section-title">Warunki pracy</div>
+  <div class="row">
+    <label>Dni w biurze / mies.</label>
+    <input type="range" min="1" max="23" step="1" value="20" id="days" oninput="update()">
+    <span class="val"><span id="days-out">20</span> dni</span>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="cards">
+  <div class="card"><div class="clabel">Koszt jednej strony</div><div class="cval" id="r-one">–</div><div class="cunit">zł</div></div>
+  <div class="card"><div class="clabel">Tam i z powrotem</div><div class="cval" id="r-rt">–</div><div class="cunit">zł / dzień</div></div>
+  <div class="card"><div class="clabel">Miesięcznie (paliwo)</div><div class="cval" id="r-month-fuel">–</div><div class="cunit">zł</div></div>
+  <div class="card"><div class="clabel">Miesięcznie (łącznie)</div><div class="cval" id="r-month-total">–</div><div class="cunit">zł</div></div>
+  <div class="card"><div class="clabel">Rocznie (łącznie)</div><div class="cval" id="r-year">–</div><div class="cunit">zł</div></div>
+  <div class="card"><div class="clabel">Czas w trasie / mies.</div><div class="cval" id="r-time">–</div><div class="cunit">godz.</div></div>
+</div>
+<p class="note">Szacowany czas przejazdu przy prędkości średniej 50 km/h (trasa miejska/podmiejska).</p>
+
+<script>
+let transport = 'car';
+
+function setTransport(t, btn) {
+  transport = t;
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('car-settings').classList.toggle('hidden', t !== 'car');
+  document.getElementById('public-settings').classList.toggle('hidden', t !== 'public');
+  document.getElementById('mixed-settings').classList.toggle('hidden', t !== 'mixed');
+  update();
+}
+
+function sl(id, outId, decimals) {
+  const el = document.getElementById(id);
+  const out = document.getElementById(outId);
+  const v = parseFloat(el.value);
+  out.textContent = v.toFixed(decimals);
+  return v;
+}
+
+function update() {
+  const days = sl('days', 'days-out', 0);
+  let oneWay = 0, monthFuel = 0, monthTotal = 0;
+  const avgSpeed = 50;
+
+  if (transport === 'car') {
+    const dist = sl('dist', 'dist-out', 0);
+    const burn = sl('burn', 'burn-out', 1);
+    const fuel = sl('fuel', 'fuel-out', 2);
+    const fixed = parseFloat(document.getElementById('fixed').value) || 0;
+    oneWay = (dist / 100) * burn * fuel;
+    monthFuel = oneWay * 2 * days;
+    monthTotal = monthFuel + fixed;
+    const travelTime = (dist * 2 / avgSpeed) * days;
+    document.getElementById('r-time').textContent = travelTime.toFixed(1);
+  } else if (transport === 'public') {
+    const ticket = parseFloat(document.getElementById('monthly-ticket').value) || 0;
+    oneWay = ticket / (days * 2);
+    monthFuel = 0;
+    monthTotal = ticket;
+    document.getElementById('r-time').textContent = '–';
+  } else {
+    const distMix = sl('dist-mix', 'dist-mix-out', 0);
+    const burnMix = sl('burn-mix', 'burn-mix-out', 1);
+    const fuelMix = sl('fuel-mix', 'fuel-mix-out', 2);
+    const ticketMix = parseFloat(document.getElementById('ticket-mix').value) || 0;
+    const carCostOne = (distMix / 100) * burnMix * fuelMix;
+    const carMonth = carCostOne * 2 * days;
+    oneWay = carCostOne + ticketMix / (days * 2);
+    monthFuel = carMonth;
+    monthTotal = carMonth + ticketMix;
+    const travelTime = (distMix * 2 / avgSpeed) * days;
+    document.getElementById('r-time').textContent = travelTime.toFixed(1);
+  }
+
+  document.getElementById('r-one').textContent = oneWay.toFixed(2);
+  document.getElementById('r-rt').textContent = (oneWay * 2).toFixed(2);
+  document.getElementById('r-month-fuel').textContent = Math.round(monthFuel);
+  document.getElementById('r-month-total').textContent = Math.round(monthTotal);
+  document.getElementById('r-year').textContent = Math.round(monthTotal * 12).toLocaleString('pl-PL');
+}
+
+update();
+</script>
+</body>
+</html>
